@@ -1,0 +1,147 @@
+local playing = game:GetService("Players")
+local player = playing.LocalPlayer
+local playergui = player.PlayerGui
+script.Parent = playergui
+
+local a = Instance.new("ScreenGui")
+a.Parent = script.Parent
+
+local b = Instance.new("Frame")
+b.Parent = a
+b.Size = UDim2.new(0.4, 1, 0.4, 1)
+b.Position = UDim2.new(0.5, 1, 0.5, 1)
+b.BorderSizePixel = 3
+
+local c = Instance.new("TextButton")
+c.Parent = b
+c.Size = UDim2.new(0.35, 1, 0.35, 1)
+c.Position = UDim2.new(0.6, 1, 0.6, 1)
+c.Text = "Toggle (OFF)"
+c.TextScaled = true
+c.BorderSizePixel = 3
+c.TextColor3 = Color3.fromRGB(255, 255, 255)
+c.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
+
+local d = c:Clone()
+d.Parent = b
+d.Position = UDim2.new(0.05, 1, 0.6, 1)
+d.Text = "Update"
+d.TextScaled = true
+d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+d.TextColor3 = Color3.fromRGB(255, 255, 255)
+d.BorderSizePixel = 3
+
+local e = Instance.new("TextBox")
+e.Parent = b
+e.Size = UDim2.new(0.6, 1, 0.35, 1)
+e.Position = UDim2.new(0.2, 1, 0.2, 1)
+e.PlaceholderText = "Size (0-1) deafult is 1"
+e.TextScaled = true
+e.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+e.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
+e.TextColor3 = Color3.fromRGB(255, 255, 255)
+e.BorderSizePixel = 3
+e.Text = ""
+
+local f = Instance.new("TextLabel")
+f.Parent = b
+f.Size = UDim2.new(0.6, 1, 0.1, 1)
+f.Position = UDim2.new(0.2, 1, 0.05, 1)
+f.Text = "Pro Builder 2 Size Changer"
+f.TextScaled = true
+f.BackgroundTransparency = 1
+f.TextColor3 = Color3.fromRGB(0, 0, 0)
+f.BorderSizePixel = 0
+
+local UIS = game:GetService('UserInputService')
+local frame = b
+local dragToggle, dragStart, startPos
+local dragSpeed = 0.25
+
+local function updateInput(input)
+	local delta = input.Position - dragStart
+	local pos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	game:GetService('TweenService'):Create(frame, TweenInfo.new(dragSpeed), {Position = pos}):Play()
+end
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragToggle = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragToggle = false
+			end
+		end)
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
+		updateInput(input)
+	end
+end)
+
+local player = game:GetService("Players").LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+
+local animEnabled = false
+local val = 1
+
+local anim = Instance.new("Animation")
+anim.AnimationId = "rbxassetid://94985254081140"
+
+local track = hum:LoadAnimation(anim)
+track.TimePosition = val
+track:Play(0, 250, 0)
+
+c.MouseButton1Click:Connect(function()
+	animEnabled = not animEnabled
+
+	if animEnabled then
+		local inputVal = tonumber(e.Text)
+		if inputVal == nil then
+			inputVal = 1
+		end
+		track:Play(0, 250, 0)
+		track.TimePosition = val
+		c.Text = "Toggle (ON)"
+		c.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
+	else
+		track:Stop()
+		c.Text = "Toggle (OFF)"
+		c.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
+	end
+end)
+
+d.MouseButton1Click:Connect(function()
+	task.spawn(function()
+		d.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
+		task.wait(1)
+		if d.BackgroundColor3 == Color3.fromRGB(0, 140, 0) then
+			d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+		end
+	end)
+	local inputVal = tonumber(e.Text)
+
+	if inputVal == nil then
+		inputVal = 1 
+	end
+
+
+	if inputVal < 0 then inputVal = 0 end
+	if inputVal > 1 then inputVal = 1 end
+
+	val = inputVal
+
+
+	if animEnabled then
+		track.TimePosition = val
+	else
+		
+		track.TimePosition = val
+	end
+end)
