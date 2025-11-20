@@ -55,33 +55,49 @@ f.BackgroundTransparency = 1
 f.TextColor3 = Color3.fromRGB(0, 0, 0)
 f.BorderSizePixel = 0
 
-local UIS = game:GetService('UserInputService')
+local UIS = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
+
 local frame = b
-local dragToggle, dragStart, startPos
+local dragging = false
+local dragStart
+local startPos
+
 local dragSpeed = 0.25
 
 local function updateInput(input)
+	if not dragging then return end
+
 	local delta = input.Position - dragStart
-	local pos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	game:GetService('TweenService'):Create(frame, TweenInfo.new(dragSpeed), {Position = pos}):Play()
+	local newPos = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+
+	TS:Create(frame, TweenInfo.new(dragSpeed), {Position = newPos}):Play()
 end
 
 frame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragToggle = true
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
 		dragStart = input.Position
 		startPos = frame.Position
+
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
-				dragToggle = false
+				dragging = false
 			end
 		end)
 	end
 end)
 
 UIS.InputChanged:Connect(function(input)
-	if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement 
+		or input.UserInputType == Enum.UserInputType.Touch) then
 		updateInput(input)
 	end
 end)
@@ -143,7 +159,7 @@ d.MouseButton1Click:Connect(function()
 	if animEnabled then
 		track.TimePosition = val
 	else
-		
+
 		track.TimePosition = val
 	end
 end)
