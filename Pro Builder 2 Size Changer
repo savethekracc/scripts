@@ -39,7 +39,7 @@ local e = Instance.new("TextBox")
 e.Parent = b
 e.Size = UDim2.new(0.6, 1, 0.35, 1)
 e.Position = UDim2.new(0.2, 1, 0.2, 1)
-e.PlaceholderText = "Size (0-1) deafult is 1"
+e.PlaceholderText = "Size (studs)"
 e.TextScaled = true
 e.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 e.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
@@ -84,7 +84,7 @@ local i = Instance.new("TextLabel")
 i.Parent = b
 i.Size = UDim2.new(0.6, 1, 0.1, 1)
 i.Position = UDim2.new(0.2, 1, 0.85, 1)
-i.Text = "Version 0.3"
+i.Text = "Version 0.3b"
 i.TextScaled = true
 i.BackgroundTransparency = 1
 i.TextColor3 = Color3.fromRGB(0, 0, 0)
@@ -114,6 +114,9 @@ local startPos
 local dragSpeed = 0.25
 
 local function updateInput(input)
+	if not opened then
+		return
+	end
 	if not dragging then return end
 
 	local delta = input.Position - dragStart
@@ -157,6 +160,8 @@ local hum = char:WaitForChild("Humanoid")
 local animEnabled = false
 local val = 1
 
+-- 1 stud = 0.00000323 timescale
+
 local anim = Instance.new("Animation")
 anim.AnimationId = "rbxassetid://94985254081140"
 
@@ -168,12 +173,16 @@ c.MouseButton1Click:Connect(function()
 	animEnabled = not animEnabled
 
 	if animEnabled then
-		local inputVal = tonumber(e.Text)
-		if inputVal == nil then
-			inputVal = 1
-		end
+		local studs = tonumber(e.Text)
+		if studs == nil then studs = 1 end
+
+		val = studs * 0.00000323
+		if val > 1 then val = 1 end
+		if val < 0 then val = 0 end
+
 		track:Play(0, 250, 0)
 		track.TimePosition = val
+
 		c.Text = "Toggle (ON)"
 		c.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
 	else
@@ -183,6 +192,7 @@ c.MouseButton1Click:Connect(function()
 	end
 end)
 
+
 d.MouseButton1Click:Connect(function()
 	task.spawn(function()
 		d.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
@@ -191,25 +201,22 @@ d.MouseButton1Click:Connect(function()
 			d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 		end
 	end)
-	local inputVal = tonumber(e.Text)
 
-	if inputVal == nil then
-		inputVal = 1 
-	end
+	-- Convert studs → timescale
+	local studs = tonumber(e.Text)
+	if studs == nil then studs = 1 end
 
+	-- 1 stud = 0.00000323 timescale
+	local inputVal = studs * 0.00000323
 
+	-- clamp between 0 and 1
 	if inputVal < 0 then inputVal = 0 end
 	if inputVal > 1 then inputVal = 1 end
 
 	val = inputVal
 
-
-	if animEnabled then
-		track.TimePosition = val
-	else
-
-		track.TimePosition = val
-	end
+	-- apply timescale to animation either way
+	track.TimePosition = val
 end)
 
 g.MouseButton1Click:Connect(function()
