@@ -10,7 +10,7 @@ a.Parent = script.Parent
 
 local b = Instance.new("Frame")
 b.Parent = a
-b.Size = UDim2.new(0.4, 1, 0.4, 1)
+b.Size = UDim2.new(0.3, 1, 0.3, 1)
 b.Position = UDim2.new(0.5, 1, 0.5, 1)
 b.BorderSizePixel = 3
 
@@ -23,6 +23,7 @@ c.TextScaled = true
 c.BorderSizePixel = 3
 c.TextColor3 = Color3.fromRGB(255, 255, 255)
 c.BackgroundColor3 = Color3.fromRGB(140, 0, 0)
+c.Visible = false
 
 local d = c:Clone()
 d.Parent = b
@@ -32,6 +33,7 @@ d.TextScaled = true
 d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 d.TextColor3 = Color3.fromRGB(255, 255, 255)
 d.BorderSizePixel = 3
+d.Visible = false
 
 local e = Instance.new("TextBox")
 e.Parent = b
@@ -44,6 +46,7 @@ e.PlaceholderColor3 = Color3.fromRGB(160, 160, 160)
 e.TextColor3 = Color3.fromRGB(255, 255, 255)
 e.BorderSizePixel = 3
 e.Text = ""
+e.Visible = false
 
 local f = Instance.new("TextLabel")
 f.Parent = b
@@ -55,10 +58,55 @@ f.BackgroundTransparency = 1
 f.TextColor3 = Color3.fromRGB(0, 0, 0)
 f.BorderSizePixel = 0
 
+local g = Instance.new("TextButton")
+g.Parent = b
+g.Size = UDim2.new(0.05, 1, 0.05, 1)
+g.Position = UDim2.new(0.94, 1, 0, 1)
+g.Text = "-"
+g.TextScaled = true
+g.BorderSizePixel = 3
+g.TextColor3 = Color3.fromRGB(255, 255, 255)
+g.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+g.Name = "close"
+
+local h = c:Clone()
+h.Parent = b
+h.Position = UDim2.new(0.05, 1, 0.6, 1)
+h.Size = UDim2.new(0.9, 1, 0.2, 1)
+h.Text = "Enter"
+h.TextScaled = true
+h.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+h.TextColor3 = Color3.fromRGB(255, 255, 255)
+h.BorderSizePixel = 3
+h.Visible = true
+
+local i = Instance.new("TextLabel")
+i.Parent = b
+i.Size = UDim2.new(0.6, 1, 0.1, 1)
+i.Position = UDim2.new(0.2, 1, 0.85, 1)
+i.Text = "Version 0.3"
+i.TextScaled = true
+i.BackgroundTransparency = 1
+i.TextColor3 = Color3.fromRGB(0, 0, 0)
+i.BorderSizePixel = 0
+
+local j = Instance.new("TextLabel")
+j.Parent = b
+j.Size = UDim2.new(0.8, 1, 0.4, 1)
+j.Position = UDim2.new(0.1, 1, 0.15, 1)
+j.Text = "Made by savethekracc on discord"
+j.TextScaled = true
+j.BackgroundTransparency = 1
+j.TextColor3 = Color3.fromRGB(0, 0, 0)
+j.BorderSizePixel = 0
+
+local opened = true
+
 local UIS = game:GetService("UserInputService")
 local TS = game:GetService("TweenService")
 
-local frame = b
+local frame = nil
+frame = b
 local dragging = false
 local dragStart
 local startPos
@@ -161,5 +209,40 @@ d.MouseButton1Click:Connect(function()
 	else
 
 		track.TimePosition = val
+	end
+end)
+
+g.MouseButton1Click:Connect(function()
+	opened = not opened
+
+	if opened == false then
+		-- CLOSE
+		for _, obj in ipairs(b:GetChildren()) do
+			if obj.Name ~= "close" then
+				obj.Visible = false
+			end
+		end
+
+		b.BackgroundTransparency = 1
+	else
+		-- OPEN
+		for _, obj in ipairs(b:GetChildren()) do
+			if obj.Name ~= "close" then
+				obj.Visible = true
+			end
+		end
+
+		b.BackgroundTransparency = 0
+	end
+end)
+
+h.MouseButton1Click:Connect(function()
+	h:Destroy()
+	i:Destroy()
+	j:Destroy()
+	for _, obj in ipairs(b:GetChildren()) do
+		if obj.Name ~= "close" then
+			obj.Visible = true
+		end
 	end
 end)
