@@ -7,8 +7,6 @@ script.Parent = playing
 
 local httpservice = game:GetService("HttpService")
 local stui = game:GetService("StarterGui")
-local uvrslV = {}
-local sttngsL = {}
 
 local canwrite = false
 local canread = false
@@ -21,7 +19,7 @@ function notify(title,text,duration)
 	})
 end
 
--- thanks wxireframed for helping me with the data saving
+-- thanks for wxireframed for helping me with data saving
 
 local writefile = type(writefile) == "function" and function(file, data, safe)
 	if safe == true then return pcall(writefile, file, data) end
@@ -32,12 +30,11 @@ local readfile = type(readfile) == "function" and function(file, safe)
 	if safe == true then
 		local ok, result = pcall(readfile, file)
 		if ok then
-			return result  -- return the actual file contents
+			return result
 		else
-			return nil     -- return nil instead of a boolean
+			return nil
 		end
 	end
-
 	return readfile(file)
 end
 
@@ -70,8 +67,17 @@ end
 
 local data = loadData() or {}
 
-local timescale = 0.00000323
-local animid = "94985254081140"
+
+local timescale = 0.00000323     
+local animid = "94985254081140" 
+
+local smoothTransition = data.smoothTransition or false
+local DebugSetting = false 
+local transitionTime = data.transitionTime or 1
+local heartbeatEnabled = data.heartbeatEnabled or false
+local heartbeatAmount = data.heartbeatAmount or 0
+local heartbeatRunning = false
+
 
 local a = Instance.new("ScreenGui")
 a.Parent = playergui
@@ -101,8 +107,8 @@ local l = b:Clone()
 l.Parent = a
 l.BackgroundColor3 = Color3.fromRGB(160,160,160)
 l.Visible = false
-
 l.Size = UDim2.new(0.6, 1, 0.6, 1)
+
 local m = l:FindFirstChild("close")
 
 local c = Instance.new("TextButton")
@@ -147,28 +153,22 @@ f.Text = "Pro Builder 2 Size Changer"
 f.TextScaled = true
 f.BackgroundTransparency = 1
 f.TextColor3 = Color3.fromRGB(0, 0, 0)
-f.BorderSizePixel = 0
 
 local h = c:Clone()
 h.Parent = b
 h.Position = UDim2.new(0.05, 1, 0.6, 1)
 h.Size = UDim2.new(0.9, 1, 0.2, 1)
-h.Text = "Enter"
-h.TextScaled = true
 h.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
-h.TextColor3 = Color3.fromRGB(255, 255, 255)
-h.BorderSizePixel = 3
+h.Text = "Enter"
 h.Visible = true
 
 local i = Instance.new("TextLabel")
 i.Parent = b
 i.Size = UDim2.new(0.6, 1, 0.1, 1)
 i.Position = UDim2.new(0.2, 1, 0.85, 1)
-i.Text = "Version 0.4a RELEASE"
+i.Text = "Version 0.4b RELEASE"
 i.TextScaled = true
 i.BackgroundTransparency = 1
-i.TextColor3 = Color3.fromRGB(0, 0, 0)
-i.BorderSizePixel = 0
 
 local j = Instance.new("TextLabel")
 j.Parent = b
@@ -177,8 +177,6 @@ j.Position = UDim2.new(0.1, 1, 0.15, 1)
 j.Text = "Made by savethekracc on discord"
 j.TextScaled = true
 j.BackgroundTransparency = 1
-j.TextColor3 = Color3.fromRGB(0, 0, 0)
-j.BorderSizePixel = 0
 
 local k = Instance.new("ImageButton")
 k.Parent = b
@@ -221,6 +219,7 @@ p.BorderSizePixel = 0
 local unused1 = Instance.new("UICorner")
 unused1.Parent = p
 p.BackgroundTransparency = 0.6
+
 local r = q:Clone()
 r.Name = "Text"
 r.Parent = p
@@ -228,6 +227,7 @@ r.Size = UDim2.new(1, 1, 1, 1)
 r.Position = UDim2.new(0, 1, 0, 1)
 r.Text = "Template"
 r.TextXAlignment = Enum.TextXAlignment.Left
+
 local s = Instance.new("ImageButton")
 s.Parent = p
 s.Size = UDim2.new(0.08,1,0.8,1)
@@ -237,6 +237,7 @@ s.BorderSizePixel = 3
 s.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 s.Name = "enabled"
 s.ImageTransparency = 1
+
 local w = e:Clone()
 w.Visible = true
 w.Parent = p
@@ -245,78 +246,120 @@ w.Position = UDim2.new(0.7, 1, 0.1, 1)
 w.PlaceholderText = "N/A"
 p.Visible = false
 
+
 local t = p:Clone()
 t.Name = "Rainbow"
 t.Parent = n
 t.Visible = true
-local unused2 = t:FindFirstChild("Text")
-unused2.Text = "Enable Rainbow"
-local u = t:FindFirstChild("enabled")
-local v = t:FindFirstChild("TextBox")
+t.Text.Text = "Enable Rainbow"
+local u = t.enabled
+local v = t.TextBox
 v:Destroy()
 
+local l1 = p:Clone()
+l1.Name = "Debug"
+l1.Parent = n
+l1.Visible = true
+l1.Text.Text = "Debug Settings"
+local m1 = l1.enabled
+local n1 = l1.TextBox
+n1:Destroy()
+
 local a1 = p:Clone()
-a1.Name = "Rainbow"
+a1.Name = "AnimID"
 a1.Parent = n
-a1.Visible = true
-local unused3 = a1:FindFirstChild("Text")
-unused3.Text = "AnimID"
-local b1 = a1:FindFirstChild("enabled")
-local c1 = a1:FindFirstChild("TextBox")
+a1.Visible = false
+a1.Text.Text = "AnimID"
+local b1 = a1.enabled
+local c1 = a1.TextBox
 c1.PlaceholderText = "ID"
 c1.Text = animid
 b1:Destroy()
 
 local d1 = p:Clone()
-d1.Name = "Rainbow"
+d1.Name = "Timescale"
 d1.Parent = n
-d1.Visible = true
-local unused3 = d1:FindFirstChild("Text")
-unused3.Text = "Timescale"
-local e1 = d1:FindFirstChild("enabled")
-local f1 = d1:FindFirstChild("TextBox")
+d1.Visible = false
+d1.Text.Text = "Timescale"
+local e1 = d1.enabled
+local f1 = d1.TextBox
 f1.PlaceholderText = "Timescale"
 f1.Text = timescale
 e1:Destroy()
+
+local g1 = p:Clone()
+g1.Name = "Smooth"
+g1.Parent = n
+g1.Visible = true
+g1.Text.Text = "Smooth Transition"
+local h1 = g1.enabled
+local i1 = g1.TextBox
+i1:Destroy()
+
+local j1 = p:Clone()
+j1.Name = "Transition"
+j1.Parent = n
+j1.Visible = smoothTransition
+j1.Text.Text = "Transition Time"
+local k1 = j1.enabled
+local l1 = j1.TextBox
+l1.PlaceholderText = "Seconds"
+l1.Text = tostring(transitionTime)
+k1:Destroy()
+
+local o1 = p:Clone()
+o1.Name = "Heartbeat"
+o1.Parent = n
+o1.Visible = smoothTransition
+o1.Text.Text = "Heartbeat"
+local p1 = o1.enabled
+local q1 = o1.TextBox
+q1:Destroy()
+
+local r1 = p:Clone()
+r1.Name = "Heartbeat %"
+r1.Parent = n
+r1.Visible = heartbeatEnabled
+r1.Text.Text = "Heartbeat %"
+local s1 = r1.enabled
+local t1 = r1.TextBox
+t1.PlaceholderText = "%"
+t1.Text = heartbeatAmount > 0 and tostring(heartbeatAmount * 100) or ""
+s1:Destroy()
+
+h1.ImageTransparency = smoothTransition and 0 or 1
+j1.Visible = smoothTransition
+o1.Visible = smoothTransition
 
 local opened = true
 
 local UIS = game:GetService("UserInputService")
 local TS = game:GetService("TweenService")
 
-local frame = nil
-frame = b
+local frame = b
 local dragging = false
 local dragStart
 local startPos
-
 local dragSpeed = 0.25
 
-local function updateInput(input)
-	if not opened then
-		return
-	end
-	if not dragging then return end
 
+local function updateInput(input)
+	if not opened or not dragging then return end
 	local delta = input.Position - dragStart
-	local newPos = UDim2.new(
+	TS:Create(frame, TweenInfo.new(dragSpeed), {Position = UDim2.new(
 		startPos.X.Scale,
 		startPos.X.Offset + delta.X,
 		startPos.Y.Scale,
 		startPos.Y.Offset + delta.Y
-	)
-
-	TS:Create(frame, TweenInfo.new(dragSpeed), {Position = newPos}):Play()
+		)}):Play()
 end
 
 frame.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 
 		or input.UserInputType == Enum.UserInputType.Touch then
-
 		dragging = true
 		dragStart = input.Position
 		startPos = frame.Position
-
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
 				dragging = false
@@ -332,7 +375,6 @@ UIS.InputChanged:Connect(function(input)
 	end
 end)
 
-local player = game:GetService("Players").LocalPlayer
 
 local track = nil
 local hum = nil
@@ -348,10 +390,8 @@ c1.FocusLost:Connect(function()
 	if newId then
 		animid = tostring(newId)
 		anim.AnimationId = "rbxassetid://" .. animid
-
 		if hum then
 			track = hum:LoadAnimation(anim)
-
 			if animEnabled then
 				track:Play(0, 250, 0)
 				track.TimePosition = val
@@ -364,7 +404,6 @@ end)
 f1.FocusLost:Connect(function()
 	local newScale = tonumber(f1.Text)
 	if newScale then
-		-- clamp between 0 and 1
 		if newScale < 0 then newScale = 0 end
 		if newScale > 1 then newScale = 1 end
 		timescale = newScale
@@ -372,27 +411,108 @@ f1.FocusLost:Connect(function()
 end)
 
 
+t1.FocusLost:Connect(function()
+	local pct = tonumber(t1.Text)
+	if not pct then return end
+	if pct < 1 then pct = 1 end
+	if pct > 100 then pct = 100 end
+	heartbeatAmount = pct / 100
+	data.heartbeatAmount = heartbeatAmount
+	saveData(data)
+end)
+
+local RunService = game:GetService("RunService")
+
+local function tweenTimePosition(track, targetTime, duration)
+	if not smoothTransition then
+		track.TimePosition = targetTime
+		return
+	end
+	local start = track.TimePosition
+	local delta = targetTime - start
+	local begin = tick()
+	while tick() - begin < duration do
+		local alpha = (tick() - begin) / duration
+		track.TimePosition = start + delta * alpha
+		RunService.Heartbeat:Wait()
+	end
+	track.TimePosition = targetTime
+end
+
+
+h1.MouseButton1Click:Connect(function()
+	smoothTransition = not smoothTransition
+	data.smoothTransition = smoothTransition
+	saveData(data)
+
+	j1.Visible = smoothTransition
+	o1.Visible = smoothTransition
+
+	h1.ImageTransparency = smoothTransition and 0 or 1
+end)
+
+
+m1.MouseButton1Click:Connect(function()
+	DebugSetting = not DebugSetting
+	a1.Visible = DebugSetting
+	d1.Visible = DebugSetting
+	m1.ImageTransparency = DebugSetting and 0 or 1
+end)
+
+
+l1.FocusLost:Connect(function()
+	local t = tonumber(l1.Text)
+	if t and t > 0 then
+		transitionTime = t
+		data.transitionTime = transitionTime
+		saveData(data)
+	end
+end)
+
+
+local function startHeartbeat()
+	if heartbeatRunning then return end
+	heartbeatRunning = true
+
+	task.spawn(function()
+		while heartbeatEnabled and animEnabled and smoothTransition and track do
+			local base = val
+			local bump = val - (val * heartbeatAmount)
+
+			tweenTimePosition(track, bump, transitionTime / 2)
+			task.wait(transitionTime / 2)
+
+			tweenTimePosition(track, base, transitionTime / 2)
+			task.wait(transitionTime / 2)
+		end
+		heartbeatRunning = false
+	end)
+end
+
 
 local function setupCharacter(char)
 	hum = char:WaitForChild("Humanoid")
-
-
 	track = hum:LoadAnimation(anim)
-
 
 	if animEnabled then
 		track:Play(0, 250, 0)
 		track.TimePosition = val
 	end
-end
 
+
+	if animEnabled and heartbeatEnabled and smoothTransition then
+		task.delay(0.5, function()
+			if track then startHeartbeat() end
+		end)
+	end
+end
 
 if player.Character then
 	setupCharacter(player.Character)
 end
 
-
 player.CharacterAdded:Connect(setupCharacter)
+
 
 c.MouseButton1Click:Connect(function()
 	animEnabled = not animEnabled
@@ -400,16 +520,20 @@ c.MouseButton1Click:Connect(function()
 	if animEnabled then
 		local studs = tonumber(e.Text)
 		if studs == nil then studs = 1 end
-
 		val = studs * timescale
 		if val > 1 then val = 1 end
 		if val < 0 then val = 0 end
 
 		track:Play(0, 250, 0)
-		track.TimePosition = val
+		tweenTimePosition(track, val, transitionTime)
 
 		c.Text = "Toggle (ON)"
 		c.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
+
+
+		if heartbeatEnabled and smoothTransition then
+			startHeartbeat()
+		end
 	else
 		track:Stop()
 		c.Text = "Toggle (OFF)"
@@ -422,49 +546,25 @@ d.MouseButton1Click:Connect(function()
 	task.spawn(function()
 		d.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
 		task.wait(1)
-		if d.BackgroundColor3 == Color3.fromRGB(0, 140, 0) then
-			d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
-		end
+		d.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
 	end)
 
-	local studs = tonumber(e.Text)
-	if studs == nil then studs = 1 end
-
-	-- 1 stud = 0.00000323 timescale
-	local inputVal = studs * timescale
-
-
-	if inputVal < 0 then inputVal = 0 end
-	if inputVal > 1 then inputVal = 1 end
-
-	val = inputVal
-
-	track.TimePosition = val
+	local studs = tonumber(e.Text) or 1
+	val = math.clamp(studs * timescale, 0, 1)
+	tweenTimePosition(track, val, transitionTime)
 end)
+
 
 g.MouseButton1Click:Connect(function()
 	opened = not opened
-
-	if opened == false then
-		-- CLOSE
-		for _, obj in ipairs(b:GetChildren()) do
-			if obj.Name ~= "close" then
-				obj.Visible = false
-			end
+	for _, obj in ipairs(b:GetChildren()) do
+		if obj.Name ~= "close" then
+			obj.Visible = opened
 		end
-
-		b.BackgroundTransparency = 1
-	else
-		-- OPEN
-		for _, obj in ipairs(b:GetChildren()) do
-			if obj.Name ~= "close" then
-				obj.Visible = true
-			end
-		end
-
-		b.BackgroundTransparency = 0
 	end
+	b.BackgroundTransparency = opened and 0 or 1
 end)
+
 
 m.MouseButton1Click:Connect(function()
 	for _, obj in ipairs(l:GetChildren()) do
@@ -472,6 +572,7 @@ m.MouseButton1Click:Connect(function()
 		l.Visible = false
 	end
 end)
+
 
 k.MouseButton1Click:Connect(function()
 	for _, obj in ipairs(l:GetChildren()) do
@@ -481,103 +582,74 @@ k.MouseButton1Click:Connect(function()
 end)
 
 
-local RunService = game:GetService("RunService")
-
-
-local originalColor = b.BackgroundColor3 or Color3.fromRGB(160,160,160)
-
-
+local originalColor = b.BackgroundColor3
 local rainbow = data.rainbow or false
 local hue = 0
-
-
-if u and type(u) == "userdata" then
-	if rainbow then
-		u.ImageTransparency = 0
-	else
-		u.ImageTransparency = 1
-	end
-end
-
-
 local rainbowRunning = false
 
 local function startRainbow()
-
 	if rainbowRunning then return end
 	rainbowRunning = true
 	task.spawn(function()
-
 		while rainbow do
 			RunService.Heartbeat:Wait()
 			hue = (hue + 0.002) % 1
 			local col = Color3.fromHSV(hue, 1, 1)
-
-			if b and b.Parent then
-				b.BackgroundColor3 = col
-			end
-			if l and l.Parent then
-				l.BackgroundColor3 = col
-			end
+			b.BackgroundColor3 = col
+			l.BackgroundColor3 = col
 		end
-
 		rainbowRunning = false
 	end)
 end
 
 local function stopRainbowAndRestore()
-
 	rainbow = false
-
-	if rainbowRunning then
-
-		local tries = 0
-		while rainbowRunning and tries < 200 do
-			RunService.Heartbeat:Wait()
-			tries = tries + 1
-		end
+	local tries = 0
+	while rainbowRunning and tries < 200 do
+		RunService.Heartbeat:Wait()
+		tries += 1
 	end
-
-	if b and b.Parent then
-		b.BackgroundColor3 = originalColor
-	end
-	if l and l.Parent then
-		l.BackgroundColor3 = originalColor
-	end
-
-	if u and type(u) == "userdata" then
-		u.ImageTransparency = 1
-	end
+	b.BackgroundColor3 = originalColor
+	l.BackgroundColor3 = originalColor
 end
 
-
-if rainbow then
-
-	if u and type(u) == "userdata" then
-		u.ImageTransparency = 0
-	end
-
-	startRainbow()
+if u then
+	u.ImageTransparency = rainbow and 0 or 1
 end
+
+if rainbow then startRainbow() end
 
 u.MouseButton1Click:Connect(function()
-	-- toggle
 	rainbow = not rainbow
 	data.rainbow = rainbow
 	saveData(data)
 
-	if rainbow then
+	u.ImageTransparency = rainbow and 0 or 1
+	if rainbow then startRainbow() else stopRainbowAndRestore() end
+end)
 
-		if u and type(u) == "userdata" then
-			u.ImageTransparency = 0
-		end
-		startRainbow()
-	else
 
-		if u and type(u) == "userdata" then
-			u.ImageTransparency = 1
-		end
-		stopRainbowAndRestore()
+p1.ImageTransparency = heartbeatEnabled and 0 or 1
+r1.Visible = heartbeatEnabled
+
+
+if heartbeatEnabled and smoothTransition then
+	task.delay(1, function()
+		if track then startHeartbeat() end
+	end)
+end
+
+
+p1.MouseButton1Click:Connect(function()
+	heartbeatEnabled = not heartbeatEnabled
+	data.heartbeatEnabled = heartbeatEnabled
+	saveData(data)
+
+	p1.ImageTransparency = heartbeatEnabled and 0 or 1
+	r1.Visible = heartbeatEnabled
+
+	if heartbeatEnabled and animEnabled and smoothTransition then
+		startHeartbeat()
 	end
 end)
 
