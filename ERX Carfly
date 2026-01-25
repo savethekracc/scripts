@@ -136,7 +136,7 @@ Tabs.VehicleMods:Slider({
 })
 
 WindUI:Notify({
-	Title = "Car Jump",
+	Title = "Car fly",
 	Content = "Car fly loaded! Press J to fly.",
 	Duration = 3,
 })
