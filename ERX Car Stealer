@@ -1,0 +1,222 @@
+repeat task.wait() until _G.WindUI and _G.Functions
+
+local WindUI = _G.WindUI
+local Tabs   = _G.Tabs
+
+local Players    = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS        = game:GetService("UserInputService")
+local Workspace  = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+
+local TOGGLE_KEY = Enum.KeyCode.K
+
+getgenv()._DriveSpeed    = 200
+getgenv()._AccelRate    = 20
+getgenv()._BrakeRate    = 80
+getgenv()._TurnRate     = 2.5
+getgenv()._ReverseSpeed = 40
+
+local enabled = false
+local currentSpeed = 0
+
+local hb, gyro, vel
+local DriveToggle
+
+local function clean()
+	currentSpeed = 0
+	if hb then hb:Disconnect() hb = nil end
+	if vel then pcall(function() vel:Destroy() end) vel = nil end
+	if gyro then pcall(function() gyro:Destroy() end) gyro = nil end
+end
+
+local function getGroundCF(root)
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = { root.Parent }
+	params.FilterType = Enum.RaycastFilterType.Blacklist
+
+	local result = Workspace:Raycast(
+		root.Position,
+		Vector3.new(0, -20, 0),
+		params
+	)
+
+	if not result then
+		return CFrame.lookAt(root.Position, root.Position + root.CFrame.LookVector)
+	end
+
+	local up = result.Normal
+	local forward = root.CFrame.LookVector
+	local right = forward:Cross(up).Unit
+	forward = up:Cross(right).Unit
+
+	return CFrame.fromMatrix(root.Position, right, up)
+end
+
+local function attach()
+	local char = Player.Character
+	if not char then return end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum or not hum.Sit then return end
+
+	local seat = hum.SeatPart
+	if not seat then return end
+
+	local vehicle = seat.Parent
+	if not vehicle or not vehicle:FindFirstChild("Body") then return end
+
+	local root = vehicle.Body:FindFirstChild("CollisionPart")
+	if not root then return end
+
+	
+	for _, d in ipairs(vehicle:GetDescendants()) do
+		if d:IsA("TouchTransmitter") then
+			d:Destroy()
+		end
+	end
+
+	gyro = Instance.new("BodyGyro")
+	gyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+	gyro.P = 2e5
+	gyro.D = 5e3
+	gyro.Parent = root
+
+	vel = Instance.new("BodyVelocity")
+	vel.MaxForce = Vector3.new(9e9, 0, 9e9)
+	vel.P = 1e4
+	vel.Parent = root
+
+	hb = RunService.Heartbeat:Connect(function(dt)
+		if not enabled then return end
+		if not hum.Sit then
+			DriveToggle:Set(false)
+			return
+		end
+
+		
+		local accelerating = UIS:IsKeyDown(Enum.KeyCode.W)
+		local braking = UIS:IsKeyDown(Enum.KeyCode.S)
+
+		
+		if accelerating then
+			currentSpeed += getgenv()._AccelRate * dt
+		elseif braking then
+			if math.abs(currentSpeed) < 1 then
+				currentSpeed -= getgenv()._AccelRate * dt
+			else
+				currentSpeed -= getgenv()._BrakeRate * dt
+			end
+		else
+			currentSpeed *= 0.985
+		end
+
+		currentSpeed = math.clamp(
+			currentSpeed,
+			-getgenv()._ReverseSpeed,
+			getgenv()._DriveSpeed
+		)
+
+		
+		local steer = 0
+		if UIS:IsKeyDown(Enum.KeyCode.A) then steer += 1 end
+		if UIS:IsKeyDown(Enum.KeyCode.D) then steer -= 1 end
+
+		if math.abs(currentSpeed) > 0.5 then
+			root.CFrame *= CFrame.Angles(
+				0,
+				math.rad(steer * getgenv()._TurnRate),
+				0
+			)
+		end
+
+		
+		gyro.CFrame = getGroundCF(root)
+
+		
+		local yVel = root.AssemblyLinearVelocity.Y
+		vel.Velocity = Vector3.new(
+			root.CFrame.LookVector.X * currentSpeed,
+			yVel,
+			root.CFrame.LookVector.Z * currentSpeed
+		)
+	end)
+end
+
+local function setDrive(state)
+	enabled = state
+	if state then
+		attach()
+	else
+		clean()
+	end
+end
+
+UIS.InputBegan:Connect(function(i, g)
+	if g then return end
+	if i.KeyCode ~= TOGGLE_KEY then return end
+
+	local hum = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+	if not hum or not hum.Sit then return end
+
+	DriveToggle:Set(not enabled)
+end)
+
+Tabs.VehicleMods:Section({
+	Title = "Car Stealer",
+	TextSize = 16,
+})
+
+DriveToggle = Tabs.VehicleMods:Toggle({
+	Title = "Car Stealer",
+	Desc = "Steal and drive any car (Keybind: K)",
+	Value = false,
+	Callback = function(v)
+		setDrive(v)
+	end,
+})
+
+Tabs.VehicleMods:Slider({
+	Title = "Max Speed",
+	Value = {
+		Min = 50,
+		Max = 400,
+		Default = 200,
+	},
+	Callback = function(v)
+		getgenv()._DriveSpeed = tonumber(v)
+	end,
+})
+
+Tabs.VehicleMods:Slider({
+	Title = "Acceleration",
+	Desc = "How fast the car speeds up",
+	Value = {
+		Min = 1,
+		Max = 100,
+		Default = 20,
+	},
+	Callback = function(v)
+		getgenv()._AccelRate = tonumber(v)
+	end,
+})
+
+Tabs.VehicleMods:Slider({
+	Title = "Brake Power",
+	Desc = "How hard the car stops",
+	Value = {
+		Min = 20,
+		Max = 300,
+		Default = 80,
+	},
+	Callback = function(v)
+		getgenv()._BrakeRate = tonumber(v)
+	end,
+})
+
+WindUI:Notify({
+	Title = "Car stealer",
+	Content = "Car stealer loaded! Press K to utilize.",
+	Duration = 3,
+})
