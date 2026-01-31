@@ -164,7 +164,7 @@ UIS.InputBegan:Connect(function(i, g)
 end)
 
 Tabs.VehicleMods:Section({
-	Title = "Car Stealer",
+	Title = "Car Stealer (MAKE SURE TO EQUIP A TOOL INSIDE THE CAR)",
 	TextSize = 16,
 })
 
