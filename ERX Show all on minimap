@@ -1,0 +1,119 @@
+repeat task.wait() until _G.WindUI and _G.Functions
+
+local WindUI = _G.WindUI
+local Tabs   = _G.Tabs
+
+local Players = game:GetService("Players")
+local UIS     = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+
+local enabled = false
+local bind = Enum.KeyCode.N
+local ToggleRef
+local internalChange = false
+
+local function applyReveal()
+	if not enabled then return end
+    
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer then
+			if not plr:FindFirstChild("RevealLocation") then
+				local b = Instance.new("BoolValue")
+				b.Name = "RevealLocation"
+				b.Parent = plr
+			end
+		end
+	end
+end
+
+local function removeReveal()
+	for _, plr in ipairs(Players:GetPlayers()) do
+		local r = plr:FindFirstChild("RevealLocation")
+		if r then
+			r:Destroy()
+		end
+	end
+end
+
+Players.PlayerAdded:Connect(function()
+	task.wait(1)
+	applyReveal()
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+	task.wait(1.5)
+	applyReveal()
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+	plr.CharacterAdded:Connect(function()
+		task.wait(1)
+		applyReveal()
+	end)
+end)
+
+task.spawn(function()
+	while task.wait(2) do
+		if enabled then
+			applyReveal()
+		end
+	end
+end)
+
+local function setToggle(state)
+	if ToggleRef then
+		internalChange = true
+		ToggleRef:Set(state)
+		internalChange = false
+	end
+end
+
+local function setEnabled(state)
+	enabled = state
+	setToggle(state)
+
+	if state then
+		applyReveal()
+        WindUI:Notify({
+	        Title = "Show all on minimap",
+	        Content = "Enabled!",
+	        Duration = 3,
+        })
+	else
+		removeReveal()
+        WindUI:Notify({
+	        Title = "Show all on minimap",
+	        Content = "Disabled!",
+	        Duration = 3,
+        })
+	end
+end
+
+UIS.InputBegan:Connect(function(i, g)
+	if g then return end
+	if i.KeyCode ~= bind then return end
+
+	setEnabled(not enabled)
+end)
+
+Tabs.Visuals:Section({
+	Title = "Minimap",
+	TextSize = 16,
+})
+
+ToggleRef = Tabs.Visuals:Toggle({
+	Title = "Show All Players",
+	Desc = "Reveal everyone on minimap (Keybind: N)",
+	Value = false,
+	Callback = function(v)
+		if internalChange then return end
+		setEnabled(v)
+	end,
+})
+
+WindUI:Notify({
+	Title = "Show all on minimap",
+	Content = "Show all on minimap loaded! Press N to utilize.",
+	Duration = 3,
+})
