@@ -1,0 +1,246 @@
+repeat task.wait() until _G.WindUI and _G.Tabs
+
+local WindUI = _G.WindUI
+local Tabs = _G.Tabs
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	if Workspace.CurrentCamera then
+		Camera = Workspace.CurrentCamera
+	end
+end)
+
+local enabled = false
+local bind = Enum.KeyCode.K
+local intensity = 1
+
+local gyro, vel, angVel, hb
+local currentVehicle
+local Toggle -- WindUI toggle ref
+
+local function getSeat()
+	local char = Player.Character
+	if not char then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.Sit then
+		return hum.SeatPart
+	end
+end
+
+local function getSeatedVehicle()
+	local seat = getSeat()
+	if not seat then return end
+	local model = seat:FindFirstAncestorOfClass("Model")
+	if model and model:FindFirstChild("Body") then
+		return model
+	end
+end
+
+local function destroyWheels(vehicle)
+	local wheels = vehicle:FindFirstChild("Wheels")
+	if wheels then
+		wheels:Destroy()
+	end
+end
+
+local camPos = Vector3.zero
+local camRot = Vector2.zero
+
+local MOUSE_SENSITIVITY = 0.0035
+local MOVE_SPEED = 0.6
+local BOOST_MULT = 2
+local PITCH_LIMIT = math.rad(89)
+
+local moveDir = Vector3.zero
+
+UIS.InputBegan:Connect(function(i, g)
+	if g then return end
+	if i.KeyCode == Enum.KeyCode.W then moveDir += Vector3.new(0,0,-1) end
+	if i.KeyCode == Enum.KeyCode.S then moveDir += Vector3.new(0,0,1) end
+	if i.KeyCode == Enum.KeyCode.A then moveDir += Vector3.new(-1,0,0) end
+	if i.KeyCode == Enum.KeyCode.D then moveDir += Vector3.new(1,0,0) end
+	if i.KeyCode == Enum.KeyCode.E then moveDir += Vector3.new(0,1,0) end
+	if i.KeyCode == Enum.KeyCode.Q then moveDir += Vector3.new(0,-1,0) end
+end)
+
+UIS.InputEnded:Connect(function(i)
+	if i.KeyCode == Enum.KeyCode.W then moveDir -= Vector3.new(0,0,-1) end
+	if i.KeyCode == Enum.KeyCode.S then moveDir -= Vector3.new(0,0,1) end
+	if i.KeyCode == Enum.KeyCode.A then moveDir -= Vector3.new(-1,0,0) end
+	if i.KeyCode == Enum.KeyCode.D then moveDir -= Vector3.new(1,0,0) end
+	if i.KeyCode == Enum.KeyCode.E then moveDir -= Vector3.new(0,1,0) end
+	if i.KeyCode == Enum.KeyCode.Q then moveDir -= Vector3.new(0,-1,0) end
+end)
+
+UIS.InputChanged:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseMovement then
+		camRot += Vector2.new(
+			-i.Delta.Y * MOUSE_SENSITIVITY,
+			-i.Delta.X * MOUSE_SENSITIVITY
+		)
+	end
+end)
+
+local function StepFreecam()
+	camRot = Vector2.new(
+		math.clamp(camRot.X, -PITCH_LIMIT, PITCH_LIMIT),
+		camRot.Y
+	)
+
+	local speed = MOVE_SPEED
+	if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then
+		speed *= BOOST_MULT
+	end
+
+	local cf =
+		CFrame.new(camPos)
+		* CFrame.fromOrientation(camRot.X, camRot.Y, 0)
+		* CFrame.new(moveDir * speed)
+
+	camPos = cf.Position
+	Camera.CFrame = cf
+end
+
+local function StartFreecam()
+	camPos = Camera.CFrame.Position
+	camRot = Vector2.new(Camera.CFrame:ToEulerAnglesYXZ())
+
+	Player.CameraMinZoomDistance = 8
+	Player.CameraMaxZoomDistance = 50
+
+	RunService:BindToRenderStep(
+		"CarFlingFreecam",
+		Enum.RenderPriority.Camera.Value,
+		StepFreecam
+	)
+end
+
+local function StopFreecam()
+	RunService:UnbindFromRenderStep("CarFlingFreecam")
+	Player.CameraMinZoomDistance = 0.5
+	Player.CameraMaxZoomDistance = 400
+end
+
+local function cleanup()
+	if hb then hb:Disconnect() hb = nil end
+	if gyro then gyro:Destroy() gyro = nil end
+	if vel then vel:Destroy() vel = nil end
+	if angVel then angVel:Destroy() angVel = nil end
+	StopFreecam()
+	currentVehicle = nil
+end
+
+local function enableFling()
+	currentVehicle = getSeatedVehicle()
+	if not currentVehicle then
+		WindUI:Notify({
+			Title = "Car Fling 2",
+			Content = "You must be seated in a vehicle",
+			Duration = 2,
+		})
+		return false
+	end
+
+	local col = currentVehicle.Body.CollisionPart
+	destroyWheels(currentVehicle)
+	StartFreecam()
+
+	gyro = Instance.new("BodyGyro", col)
+	gyro.MaxTorque = Vector3.new(9e9,9e9,9e9)
+	gyro.P = 9e4
+
+	vel = Instance.new("BodyVelocity", col)
+	vel.MaxForce = Vector3.new(9e9,9e9,9e9)
+	vel.P = 9e4
+
+	angVel = Instance.new("BodyAngularVelocity", col)
+	angVel.MaxTorque = Vector3.new(9e9,9e9,9e9)
+	angVel.P = 9e4
+
+	hb = RunService.Heartbeat:Connect(function()
+		if not enabled then return end
+		if not getSeat() then
+			if Toggle then Toggle:Set(false) end
+			return
+		end
+
+		local params = RaycastParams.new()
+		params.FilterDescendantsInstances = { Player.Character, currentVehicle }
+		params.FilterType = Enum.RaycastFilterType.Blacklist
+
+		local origin = Camera.CFrame.Position
+		local dir = Camera.CFrame.LookVector * 1000
+		local result = Workspace:Raycast(origin, dir, params)
+
+		local target = result and result.Position or (origin + dir)
+		local move = (target - col.Position).Unit
+
+		vel.Velocity = move * (95 * intensity)
+		angVel.AngularVelocity = Vector3.new(
+			math.random(-90,90),
+			math.random(-90,90),
+			math.random(-90,90)
+		) * intensity
+
+		gyro.CFrame = CFrame.lookAt(col.Position, target)
+	end)
+
+	return true
+end
+
+local function setState(state)
+	if enabled == state then return end
+	enabled = state
+
+	if state then
+		if not enableFling() then
+			enabled = false
+			if Toggle then Toggle:Set(false) end
+		end
+	else
+		cleanup()
+	end
+end
+
+UIS.InputBegan:Connect(function(i, g)
+	if g then return end
+	if i.KeyCode == bind and Toggle then
+		Toggle:Set(not enabled)
+	end
+end)
+
+Tabs.Trolling:Section({
+	Title = "Flinging",
+	TextSize = 16,
+})
+
+Toggle = Tabs.Trolling:Toggle({
+	Title = "Enable Carfling (/w Freecam)",
+	Desc = "Keybind: K",
+	Value = false,
+	Callback = function(v)
+		setState(v)
+	end,
+})
+
+Tabs.Trolling:Slider({
+	Title = "Fling Intensity",
+	Value = { Min = 0.5, Max = 6, Default = 1 },
+	Precise = true,
+	Callback = function(v)
+		intensity = tonumber(v)
+	end,
+})
+
+WindUI:Notify({
+	Title = "Car Fling 2",
+	Content = "Loaded! Press K to toggle.",
+	Duration = 3,
+})
