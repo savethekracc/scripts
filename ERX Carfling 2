@@ -18,7 +18,7 @@ Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 end)
 
 local enabled = false
-local bind = Enum.KeyCode.K
+local bind = Enum.KeyCode.V
 local intensity = 1
 
 local gyro, vel, angVel, hb
@@ -243,7 +243,7 @@ Tabs.Trolling:Section({
 
 Toggle = Tabs.Trolling:Toggle({
 	Title = "Enable Carfling (/w Freecam)",
-	Desc = "Keybind: K",
+	Desc = "Keybind: V",
 	Value = false,
 	Callback = function(v)
 		setState(v)
@@ -261,6 +261,6 @@ Tabs.Trolling:Slider({
 
 WindUI:Notify({
 	Title = "Car Fling 2",
-	Content = "Loaded! Press K to toggle.",
+	Content = "Loaded! Press V to toggle.",
 	Duration = 3,
 })
