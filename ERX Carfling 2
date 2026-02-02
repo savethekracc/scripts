@@ -23,7 +23,7 @@ local intensity = 1
 
 local gyro, vel, angVel, hb
 local currentVehicle
-local Toggle -- WindUI toggle ref
+local Toggle
 
 local function getSeat()
 	local char = Player.Character
@@ -58,25 +58,32 @@ local MOVE_SPEED = 0.6
 local BOOST_MULT = 2
 local PITCH_LIMIT = math.rad(89)
 
-local moveDir = Vector3.zero
+local heldKeys = {
+	W = false,
+	A = false,
+	S = false,
+	D = false,
+	Q = false,
+	E = false,
+}
 
 UIS.InputBegan:Connect(function(i, g)
 	if g then return end
-	if i.KeyCode == Enum.KeyCode.W then moveDir += Vector3.new(0,0,-1) end
-	if i.KeyCode == Enum.KeyCode.S then moveDir += Vector3.new(0,0,1) end
-	if i.KeyCode == Enum.KeyCode.A then moveDir += Vector3.new(-1,0,0) end
-	if i.KeyCode == Enum.KeyCode.D then moveDir += Vector3.new(1,0,0) end
-	if i.KeyCode == Enum.KeyCode.E then moveDir += Vector3.new(0,1,0) end
-	if i.KeyCode == Enum.KeyCode.Q then moveDir += Vector3.new(0,-1,0) end
+	if i.KeyCode == Enum.KeyCode.W then heldKeys.W = true end
+	if i.KeyCode == Enum.KeyCode.S then heldKeys.S = true end
+	if i.KeyCode == Enum.KeyCode.A then heldKeys.A = true end
+	if i.KeyCode == Enum.KeyCode.D then heldKeys.D = true end
+	if i.KeyCode == Enum.KeyCode.E then heldKeys.E = true end
+	if i.KeyCode == Enum.KeyCode.Q then heldKeys.Q = true end
 end)
 
 UIS.InputEnded:Connect(function(i)
-	if i.KeyCode == Enum.KeyCode.W then moveDir -= Vector3.new(0,0,-1) end
-	if i.KeyCode == Enum.KeyCode.S then moveDir -= Vector3.new(0,0,1) end
-	if i.KeyCode == Enum.KeyCode.A then moveDir -= Vector3.new(-1,0,0) end
-	if i.KeyCode == Enum.KeyCode.D then moveDir -= Vector3.new(1,0,0) end
-	if i.KeyCode == Enum.KeyCode.E then moveDir -= Vector3.new(0,1,0) end
-	if i.KeyCode == Enum.KeyCode.Q then moveDir -= Vector3.new(0,-1,0) end
+	if i.KeyCode == Enum.KeyCode.W then heldKeys.W = false end
+	if i.KeyCode == Enum.KeyCode.S then heldKeys.S = false end
+	if i.KeyCode == Enum.KeyCode.A then heldKeys.A = false end
+	if i.KeyCode == Enum.KeyCode.D then heldKeys.D = false end
+	if i.KeyCode == Enum.KeyCode.E then heldKeys.E = false end
+	if i.KeyCode == Enum.KeyCode.Q then heldKeys.Q = false end
 end)
 
 UIS.InputChanged:Connect(function(i)
@@ -88,6 +95,17 @@ UIS.InputChanged:Connect(function(i)
 	end
 end)
 
+local function getMoveDir()
+	local dir = Vector3.zero
+	if heldKeys.W then dir += Vector3.new(0, 0, -1) end
+	if heldKeys.S then dir += Vector3.new(0, 0, 1) end
+	if heldKeys.A then dir += Vector3.new(-1, 0, 0) end
+	if heldKeys.D then dir += Vector3.new(1, 0, 0) end
+	if heldKeys.E then dir += Vector3.new(0, 1, 0) end
+	if heldKeys.Q then dir += Vector3.new(0, -1, 0) end
+	return dir
+end
+
 local function StepFreecam()
 	camRot = Vector2.new(
 		math.clamp(camRot.X, -PITCH_LIMIT, PITCH_LIMIT),
@@ -98,6 +116,8 @@ local function StepFreecam()
 	if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then
 		speed *= BOOST_MULT
 	end
+
+	local moveDir = getMoveDir()
 
 	local cf =
 		CFrame.new(camPos)
