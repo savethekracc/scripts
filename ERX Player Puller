@@ -1,0 +1,173 @@
+repeat task.wait() until _G.WindUI and _G.Tabs
+
+local WindUI = _G.WindUI
+local Tabs   = _G.Tabs
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+local DistanceInFront = 4
+
+local AnchorPart = Instance.new("Part")
+AnchorPart.Anchored = true
+AnchorPart.CanCollide = false
+AnchorPart.CanTouch = false
+AnchorPart.Transparency = 1
+AnchorPart.Size = Vector3.new(0.1,0.1,0.1)
+AnchorPart.Parent = Workspace
+
+local PlayerWelds = {}
+local enabled = false
+local heartbeatConnection
+
+local function clearAll()
+	for player,weld in pairs(PlayerWelds) do
+		if weld then
+			pcall(function() weld:Destroy() end)
+		end
+	end
+	PlayerWelds = {}
+end
+
+local function bringPlayer(targetCharacter)
+	if not enabled then return end
+	if targetCharacter == LocalPlayer.Character then return end
+
+	local targetRoot = targetCharacter:FindFirstChild("HumanoidRootPart")
+	local humanoid = targetCharacter:FindFirstChild("Humanoid")
+	if not targetRoot or not humanoid then return end
+	if humanoid.Sit then return end
+
+	for _,part in pairs(targetCharacter:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+		end
+	end
+
+	if PlayerWelds[targetCharacter] then
+		PlayerWelds[targetCharacter]:Destroy()
+	end
+
+	local weld = Instance.new("Weld")
+	weld.Part0 = AnchorPart
+	weld.Part1 = targetRoot
+	weld.C0 = CFrame.new()
+	weld.Parent = AnchorPart
+
+	PlayerWelds[targetCharacter] = weld
+
+	humanoid:GetPropertyChangedSignal("Sit"):Connect(function()
+		if humanoid.Sit then
+			if PlayerWelds[targetCharacter] then
+				PlayerWelds[targetCharacter]:Destroy()
+				PlayerWelds[targetCharacter] = nil
+			end
+		else
+			task.wait(0.1)
+			if enabled then
+				bringPlayer(targetCharacter)
+			end
+		end
+	end)
+end
+
+local function bringAllPlayers()
+	if not enabled then return end
+
+	for _,plr in pairs(Players:GetPlayers()) do
+		if plr ~= LocalPlayer then
+			local char = plr.Character
+			if char then
+				if not PlayerWelds[char] then
+					bringPlayer(char)
+				end
+			end
+		end
+	end
+end
+
+local function setEnabled(state)
+	enabled = state
+
+	if not state then
+		if heartbeatConnection then
+			heartbeatConnection:Disconnect()
+			heartbeatConnection = nil
+		end
+		clearAll()
+		return
+	end
+
+	heartbeatConnection = RunService.Heartbeat:Connect(function()
+		pcall(function()
+			if not Character or not HumanoidRootPart then return end
+
+			local frontPosition = HumanoidRootPart.CFrame * CFrame.new(0,0,-DistanceInFront)
+			AnchorPart.CFrame = frontPosition
+
+			local vel = HumanoidRootPart.AssemblyLinearVelocity
+			if vel.Y > 10 then
+				HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(vel.X,0,vel.Z)
+			end
+
+			for char,weld in pairs(PlayerWelds) do
+				if not char or not char.Parent then
+					if weld then weld:Destroy() end
+					PlayerWelds[char] = nil
+				end
+			end
+
+			bringAllPlayers()
+		end)
+	end)
+
+	bringAllPlayers()
+end
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	Character = newChar
+	HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+	clearAll()
+
+	task.wait(1)
+
+	if enabled then
+		bringAllPlayers()
+	end
+end)
+
+Players.PlayerAdded:Connect(function(plr)
+	plr.CharacterAdded:Connect(function(char)
+		task.wait(0.5)
+		if enabled then
+			bringPlayer(char)
+		end
+	end)
+end)
+
+Tabs.Trolling:Section({
+	Title = "Player Puller",
+	TextSize = 16,
+})
+
+Tabs.Trolling:Toggle({
+	Title = "Player Puller (Weld)",
+	Desc = "Puts everyone infront of you so you can shoot them",
+	Value = false,
+	Callback = function(v)
+		setEnabled(v)
+	end
+})
+
+WindUI:Notify({
+	Title = "Loaded",
+	Content = "Player Puller Loaded!",
+	Duration = 3,
+})
