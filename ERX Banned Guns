@@ -1,0 +1,44 @@
+-- Credits to whoaboutYT for making the og one js made it windui
+repeat task.wait() until _G.WindUI and _G.Functions
+
+local WindUI = _G.WindUI
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local FE = ReplicatedStorage:WaitForChild("FE")
+local GetBannedGuns = FE:WaitForChild("GetBannedGuns")
+
+local function getBannedGuns()
+    local success, result = pcall(function()
+        return GetBannedGuns:InvokeServer()
+    end)
+
+    if not success then
+        warn("Failed to invoke GetBannedGuns:", result) 
+        return nil
+    end
+
+    return result
+end
+
+
+local guns = getBannedGuns()
+
+if not guns or #guns == 0 then
+    WindUI:Notify({
+        Title = "Banned Guns",
+        Content = "None found.",
+        Duration = 5
+    })
+else
+    warn("Banned Guns:")
+
+    for i, gun in ipairs(guns) do
+        print("Banned Gun #" .. tostring(i) .. ": " .. gun)
+    end
+
+    WindUI:Notify({
+        Title = "Banned Guns",
+        Content = tostring(#guns) .. " banned guns found. Check F9 console.",
+        Duration = 5
+    })
+end
